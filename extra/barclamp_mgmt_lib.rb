@@ -48,6 +48,8 @@ def bc_install(bc, path, barclamp)
     bc_install_layout_1_app bc, path, barclamp
     puts "Installing chef components" if DEBUG
     bc_install_layout_1_chef bc, path, barclamp
+    puts "Installing puppet components" if DEBUG
+    bc_install_layout_1_puppet bc, path, barclamp
     puts "Installing cache components" if DEBUG
     bc_install_layout_1_cache bc, path, barclamp
   else
@@ -469,6 +471,55 @@ def bc_install_layout_1_chef(bc, path, barclamp)
   
   puts "Barclamp #{bc} (format v1) Chef Components Uploaded." 
   
+end
+
+# upload the puppet parts for a barclamp
+def bc_install_layout_1_puppet(bc, path, barclamp)
+  
+  log_path = File.join '/var', 'log', 'barclamps'
+  FileUtils.mkdir log_path unless File.directory? log_path
+  log = File.join log_path, "#{bc}.log"
+  system "date >> #{log}"
+  puts "Capturing puppet install logs to #{log}" if DEBUG
+  puppet = File.join path, 'puppet'
+  manifests = File.join chef, 'manifests'
+  templates = File.join chef, 'templates'
+  files = File.join chef, 'files'
+  
+  #upload the manifests
+  if File.directory? manifests
+    unless system "cp -r \"#{manifests}\" /etc/puppet >> #{log} 2>&1"
+      puts "\tFailed: cp #{manifests}. See #{log}"
+      exit 1
+    end
+    puts "\texecuted: cp #{manifests}" if DEBUG  
+  else
+    puts "\tNOTE: could not find manifests #{manifests}" if DEBUG
+  end
+
+  #upload the templates
+  if File.directory? templates
+    unless system "cp -r \"#{templates}\" /etc/puppet >> #{log} 2>&1"
+      puts "\tFailed: cp #{templates}. See #{log}"
+      exit 1
+    end
+    puts "\texecuted: cp #{templates}" if DEBUG  
+  else
+    puts "\tNOTE: could not find templates #{templates}" if DEBUG
+  end
+  
+  #upload the files
+  if File.directory? files
+    unless system "cp -r \"#{files}\" /etc/puppet >> #{log} 2>&1"
+      puts "\tFailed: cp #{files}. See #{log}"
+      exit 1
+    end
+    puts "\texecuted: cp #{files}" if DEBUG  
+  else
+    puts "\tNOTE: could not find files #{files}" if DEBUG
+  end
+
+  puts "Barclamp #{bc} (format v1) Puppet Components Uploaded." 
 end
 
 def bc_install_layout_1_cache(bc,path,barclamp)
