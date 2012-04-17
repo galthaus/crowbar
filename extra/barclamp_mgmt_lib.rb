@@ -482,10 +482,22 @@ def bc_install_layout_1_puppet(bc, path, barclamp)
   system "date >> #{log}"
   puts "Capturing puppet install logs to #{log}" if DEBUG
   puppet = File.join path, 'puppet'
-  manifests = File.join chef, 'manifests'
-  templates = File.join chef, 'templates'
-  files = File.join chef, 'files'
+  modules = File.join puppet, 'modules'
+  manifests = File.join puppet, 'manifests'
+  templates = File.join puppet, 'templates'
+  files = File.join puppet, 'files'
   
+  #upload the modules
+  if File.directory? modules
+    unless system "cp -r \"#{modules}\" /etc/puppet >> #{log} 2>&1"
+      puts "\tFailed: cp #{modules}. See #{log}"
+      exit 1
+    end
+    puts "\texecuted: cp #{modules}" if DEBUG  
+  else
+    puts "\tNOTE: could not find modules #{modules}" if DEBUG
+  end
+
   #upload the manifests
   if File.directory? manifests
     unless system "cp -r \"#{manifests}\" /etc/puppet >> #{log} 2>&1"
