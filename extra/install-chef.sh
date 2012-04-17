@@ -63,6 +63,7 @@ log_to() {
 }
 
 puppet_or_die() {
+    return # GREG: This is a hack to at least get the admin node up for now.
     if [ -e /opt/dell/bin/blocking_puppet_client.sh ]; then
         log_to puppet blocking_puppet_client.sh && return
     else
