@@ -62,7 +62,17 @@ log_to() {
     return $_ret
 }
 
-
+puppet_or_die() {
+    if [ -e /opt/dell/bin/blocking_puppet_client.sh ]; then
+        log_to puppet blocking_puppet_client.sh && return
+    else
+        log_to puppet puppet agent --test && return
+    fi
+    # If we were left without an IP address, rectify that.
+    ip link set eth0 up
+    ip addr add 192.168.124.10/24 dev eth0
+    die "Puppet: $@"
+}
 
 chef_or_die() {
     if [ -e /opt/dell/bin/blocking_chef_client.sh ]; then
@@ -73,7 +83,12 @@ chef_or_die() {
     # If we were left without an IP address, rectify that.
     ip link set eth0 up
     ip addr add 192.168.124.10/24 dev eth0
-    die "$@"
+    die "Chef: $@"
+}
+
+config_or_die() {
+    chef_or_die
+    puppet_or_die
 }
 
 # Run knife in a loop until it doesn't segfault.
@@ -261,7 +276,7 @@ fi
 # Bundle up our patches and put them in a sane place
 (cd "$DVD_PATH/extra"; tar czf "/tftpboot/patches.tar.gz" patches)
 
-chef_or_die "Initial chef run failed"
+config_or_die "Initial config run failed"
 
 echo "$(date '+%F %T %z'): Building Keys..."
 
@@ -335,7 +350,7 @@ pre_crowbar_fixups
 
 echo "$(date '+%F %T %z'): Bringing up Crowbar..."
 # Run chef-client to bring-up crowbar server
-chef_or_die "Failed to bring up Crowbar"
+config_or_die "Failed to bring up Crowbar"
 # Make sure looper_chef_client is a NOOP until we are finished deploying
 touch /tmp/deploying
 
@@ -355,7 +370,7 @@ if [ "$(crowbar crowbar proposal list)" != "default" ] ; then
     for ((x=1; x<6; x++)); do
         crowbar crowbar "${proposal_opts[@]}" && { proposal_created=true; break; }
         echo "Proposal create failed, pass $x.  Will kick Chef and try again."
-        chef_or_die "Kicking proposal bits"
+        config_or_die "Kicking proposal bits"
         sleep 1
     done
     if [[ ! $proposal_created ]]; then
@@ -368,7 +383,7 @@ crowbar crowbar proposal commit default || \
 crowbar crowbar show default >/var/log/default.json
 # have die change our status to problem if we fail
 crowbar_up=true
-chef_or_die "Chef run after default proposal commit failed!"
+config_or_die "Chef run after default proposal commit failed!"
 
 # Need to make sure that we have the indexer/expander finished
 COUNT=0
@@ -402,7 +417,7 @@ do
         "transition_check_$state" || \
             die "Sanity check for transitioning to $state failed!"
     fi
-    chef_or_die "Chef run for $state transition failed!"
+    config_or_die "Chef run for $state transition failed!"
     check_machine_role
 done
 

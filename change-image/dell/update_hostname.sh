@@ -23,8 +23,8 @@ HOSTNAME=${FQDN%%.*}
 DOMAINNAME=${FQDN#*.}
 
 # Fix up the localhost address mapping.
-sed -i -e "s/\(127\.0\.0\.1.*\)/127.0.0.1 $FQDN $HOSTNAME localhost.localdomain localhost/" /etc/hosts
-sed -i -e "s/\(127\.0\.1\.1.*\)/127.0.1.1 $FQDN $HOSTNAME localhost.localdomain localhost/" /etc/hosts
+sed -i -e "s/\(127\.0\.0\.1.*\)/127.0.0.1 $FQDN $HOSTNAME puppet localhost.localdomain localhost/" /etc/hosts
+sed -i -e "s/\(127\.0\.1\.1.*\)/127.0.1.1 $FQDN $HOSTNAME puppet localhost.localdomain localhost/" /etc/hosts
 
 # Fix Ubuntu/Debian Hostname
 echo "$FQDN" > /etc/hostname
